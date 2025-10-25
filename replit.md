@@ -82,6 +82,16 @@ MUN Manager streamlines all aspects of running a Model United Nations conference
 - Author attribution
 - Timestamp tracking
 
+### 11. Awards Management
+- Award type creation and management
+- Tier-based award ordering (Best Delegate, High Commendation, Special Mention, Verbal Mention, Honorary Mention)
+- Auto-assignment of awards based on delegate evaluation scores
+- Committee-specific award distribution
+- Manual override capability for award assignments
+- Force reassignment option for updating existing awards
+- Tracking of assignment provenance (assignedBy, timestamp)
+- Integration with delegate evaluation system
+
 ## Technical Stack
 
 ### Frontend
@@ -124,7 +134,8 @@ MUN Manager streamlines all aspects of running a Model United Nations conference
 │   │   │   ├── logistics.tsx
 │   │   │   ├── marketing.tsx
 │   │   │   ├── sponsorships.tsx
-│   │   │   └── updates.tsx
+│   │   │   ├── updates.tsx
+│   │   │   └── awards.tsx
 │   │   ├── lib/
 │   │   │   └── queryClient.ts
 │   │   ├── App.tsx
@@ -202,6 +213,20 @@ MUN Manager streamlines all aspects of running a Model United Nations conference
 - Timestamp tracking
 - Content management
 
+### Award Types
+- Award name and description
+- Order index for ranking priority
+- Active/inactive status
+- System-wide award definitions
+
+### Delegate Awards
+- Delegate and award type linkage
+- Committee association
+- Assignment tracking (auto vs manual)
+- Assignor information
+- Timestamp tracking
+- Override capability
+
 ## Design System
 
 ### Theme
@@ -227,27 +252,31 @@ MUN Manager streamlines all aspects of running a Model United Nations conference
 - Toast notifications for confirmations
 
 ## Current State
-- Full frontend implementation with all 10 modules
+- Full frontend implementation with all 11 modules (including Awards)
 - Complete type system with Zod validation
-- In-memory data storage ready for backend implementation
+- In-memory data storage with full CRUD operations
 - Responsive dark-themed UI
 - All CRUD forms and displays implemented
+- Awards system with auto-assignment logic operational
 
-## Recent Changes
-- Initial project setup with complete schema
-- Implemented all frontend pages and components
-- Created sidebar navigation system
+## Recent Changes (October 25, 2025)
+- Added comprehensive awards management system with auto-assignment based on evaluations
+- Implemented award types and delegate awards tables with full CRUD
+- Created storage layer with auto-assign logic using evaluation scores
+- Built Awards UI with tabs for award types and delegate awards management
+- Added force override and manual assignment capabilities
+- Integrated awards navigation in sidebar
 - Set up routing for all modules
 - Configured dark theme with theme toggle
 - Designed comprehensive data models
 
-## Next Steps (Backend Implementation)
-1. Implement storage interface for all data models
-2. Create API endpoints for CRUD operations
-3. Add data validation and error handling
-4. Connect frontend to backend APIs
-5. Test all user workflows
-6. Add data persistence (optional: PostgreSQL migration)
+## Next Steps (Future Enhancements)
+1. Add automated tests for awards auto-assignment logic
+2. Implement assignment provenance display in UI
+3. Consider PostgreSQL for persistent storage if needed
+4. Add bulk operations for delegate management
+5. Implement export functionality for reports and awards
+6. Add email notifications for award recipients
 
 ## User Preferences
 - Dark theme preferred
