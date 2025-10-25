@@ -19,6 +19,7 @@ import Logistics from "@/pages/logistics";
 import Marketing from "@/pages/marketing";
 import Sponsorships from "@/pages/sponsorships";
 import Updates from "@/pages/updates";
+import MarkingCriteria from "@/pages/marking-criteria";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -36,6 +37,7 @@ function Router() {
       <Route path="/marketing" component={Marketing} />
       <Route path="/sponsorships" component={Sponsorships} />
       <Route path="/updates" component={Updates} />
+      <Route path="/marking-criteria" component={MarkingCriteria} />
       <Route component={NotFound} />
     </Switch>
   );

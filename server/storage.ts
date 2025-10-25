@@ -23,6 +23,8 @@ import {
   type InsertPortfolio,
   type AppSettings,
   type InsertAppSettings,
+  type MarkingCriteria,
+  type InsertMarkingCriteria,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -86,6 +88,11 @@ export interface IStorage {
 
   getAppSettings(): Promise<AppSettings | undefined>;
   updateAppSettings(settings: Partial<InsertAppSettings>): Promise<AppSettings>;
+
+  getMarkingCriteria(): Promise<MarkingCriteria[]>;
+  createMarkingCriteria(criteria: InsertMarkingCriteria): Promise<MarkingCriteria>;
+  updateMarkingCriteria(id: string, criteria: Partial<InsertMarkingCriteria>): Promise<MarkingCriteria | undefined>;
+  deleteMarkingCriteria(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -101,6 +108,7 @@ export class MemStorage implements IStorage {
   private updates: Map<string, Update>;
   private evaluations: Map<string, DelegateEvaluation>;
   private appSettings: AppSettings | undefined;
+  private markingCriteria: Map<string, MarkingCriteria>;
 
   constructor() {
     this.portfolios = new Map();
@@ -115,6 +123,7 @@ export class MemStorage implements IStorage {
     this.updates = new Map();
     this.evaluations = new Map();
     this.appSettings = undefined;
+    this.markingCriteria = new Map();
 
     this.seedData();
   }
@@ -204,6 +213,14 @@ export class MemStorage implements IStorage {
       timestamp: new Date(),
     };
     this.updates.set(sampleUpdate.id, sampleUpdate);
+
+    const defaultMarkingCriteria: MarkingCriteria[] = [
+      { id: randomUUID(), name: "Research & Preparation", maxPoints: 100, description: "Quality of research and preparation for the topic", orderIndex: 0 },
+      { id: randomUUID(), name: "Communication Skills", maxPoints: 100, description: "Effectiveness in verbal and written communication", orderIndex: 1 },
+      { id: randomUUID(), name: "Diplomacy & Negotiation", maxPoints: 100, description: "Ability to negotiate and build consensus", orderIndex: 2 },
+      { id: randomUUID(), name: "Participation & Engagement", maxPoints: 100, description: "Active participation in debates and discussions", orderIndex: 3 },
+    ];
+    defaultMarkingCriteria.forEach(c => this.markingCriteria.set(c.id, c));
   }
 
   async getDelegates(): Promise<Delegate[]> {
@@ -502,6 +519,29 @@ export class MemStorage implements IStorage {
       this.appSettings = { ...this.appSettings, ...settings };
     }
     return this.appSettings;
+  }
+
+  async getMarkingCriteria(): Promise<MarkingCriteria[]> {
+    return Array.from(this.markingCriteria.values()).sort((a, b) => a.orderIndex - b.orderIndex);
+  }
+
+  async createMarkingCriteria(insertCriteria: InsertMarkingCriteria): Promise<MarkingCriteria> {
+    const id = randomUUID();
+    const criteria: MarkingCriteria = { ...insertCriteria, id };
+    this.markingCriteria.set(id, criteria);
+    return criteria;
+  }
+
+  async updateMarkingCriteria(id: string, data: Partial<InsertMarkingCriteria>): Promise<MarkingCriteria | undefined> {
+    const existing = this.markingCriteria.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...data };
+    this.markingCriteria.set(id, updated);
+    return updated;
+  }
+
+  async deleteMarkingCriteria(id: string): Promise<boolean> {
+    return this.markingCriteria.delete(id);
   }
 }
 

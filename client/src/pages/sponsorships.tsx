@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Mail, Phone, Award } from "lucide-react";
-import type { Sponsorship, InsertSponsorship } from "@shared/schema";
+import type { Sponsorship, InsertSponsorship, AppSettings } from "@shared/schema";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +32,7 @@ export default function Sponsorships() {
   const { toast } = useToast();
 
   const { data: sponsorships, isLoading } = useQuery<Sponsorship[]>({ queryKey: ["/api/sponsorships"] });
+  const { data: appSettings } = useQuery<AppSettings>({ queryKey: ["/api/app-settings"] });
 
   const createMutation = useMutation({
     mutationFn: (data: InsertSponsorship) => apiRequest("POST", "/api/sponsorships", data),
@@ -135,7 +136,7 @@ export default function Sponsorships() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="amount">Amount ($)</Label>
+                  <Label htmlFor="amount">Amount ({appSettings?.currencySymbol || "$"})</Label>
                   <Input
                     id="amount"
                     type="number"
@@ -224,7 +225,7 @@ export default function Sponsorships() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Raised</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">${totalAmount.toLocaleString()}</div>
+            <div className="text-3xl font-bold">{appSettings?.currencySymbol || "$"}{totalAmount.toLocaleString()}</div>
           </CardContent>
         </Card>
         <Card>
@@ -276,7 +277,7 @@ export default function Sponsorships() {
                     </CardHeader>
                     <CardContent className="space-y-3">
                       <div className="text-2xl font-bold text-primary">
-                        ${sponsor.amount.toLocaleString()}
+                        {appSettings?.currencySymbol || "$"}{sponsor.amount.toLocaleString()}
                       </div>
                       <div className="space-y-2 text-sm">
                         <div>

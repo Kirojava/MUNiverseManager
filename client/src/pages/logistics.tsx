@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Package, DollarSign } from "lucide-react";
-import type { Logistics, InsertLogistics } from "@shared/schema";
+import type { Logistics, InsertLogistics, AppSettings } from "@shared/schema";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +33,7 @@ export default function Logistics() {
   const { toast } = useToast();
 
   const { data: logistics, isLoading } = useQuery<Logistics[]>({ queryKey: ["/api/logistics"] });
+  const { data: appSettings } = useQuery<AppSettings>({ queryKey: ["/api/app-settings"] });
 
   const createMutation = useMutation({
     mutationFn: (data: InsertLogistics) => apiRequest("POST", "/api/logistics", data),
@@ -158,7 +159,7 @@ export default function Logistics() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="cost">Cost ($)</Label>
+                  <Label htmlFor="cost">Cost ({appSettings?.currencySymbol || "$"})</Label>
                   <Input
                     id="cost"
                     type="number"
@@ -203,7 +204,7 @@ export default function Logistics() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Budget</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">${totalCost.toLocaleString()}</div>
+            <div className="text-3xl font-bold">{appSettings?.currencySymbol || "$"}{totalCost.toLocaleString()}</div>
           </CardContent>
         </Card>
         <Card>
@@ -253,7 +254,7 @@ export default function Logistics() {
                                 {item.vendor && <span>• {item.vendor}</span>}
                                 {item.cost && item.cost > 0 && (
                                   <span className="flex items-center gap-1">
-                                    • <DollarSign className="h-3 w-3" /> {item.cost.toLocaleString()}
+                                    • {appSettings?.currencySymbol || "$"}{item.cost.toLocaleString()}
                                   </span>
                                 )}
                               </div>

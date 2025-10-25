@@ -14,6 +14,7 @@ import {
   insertUpdateSchema,
   insertDelegateEvaluationSchema,
   insertAppSettingsSchema,
+  insertMarkingCriteriaSchema,
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -432,6 +433,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const success = await storage.deleteEvaluation(req.params.id);
     if (!success) {
       return res.status(404).json({ error: "Evaluation not found" });
+    }
+    res.status(204).send();
+  });
+
+  app.get("/api/marking-criteria", async (_req, res) => {
+    const criteria = await storage.getMarkingCriteria();
+    res.json(criteria);
+  });
+
+  app.post("/api/marking-criteria", async (req, res) => {
+    try {
+      const data = insertMarkingCriteriaSchema.parse(req.body);
+      const criteria = await storage.createMarkingCriteria(data);
+      res.status(201).json(criteria);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid criteria data" });
+    }
+  });
+
+  app.patch("/api/marking-criteria/:id", async (req, res) => {
+    try {
+      const data = insertMarkingCriteriaSchema.partial().parse(req.body);
+      const criteria = await storage.updateMarkingCriteria(req.params.id, data);
+      if (!criteria) {
+        return res.status(404).json({ error: "Criteria not found" });
+      }
+      res.json(criteria);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid update data" });
+    }
+  });
+
+  app.delete("/api/marking-criteria/:id", async (req, res) => {
+    const success = await storage.deleteMarkingCriteria(req.params.id);
+    if (!success) {
+      return res.status(404).json({ error: "Criteria not found" });
     }
     res.status(204).send();
   });

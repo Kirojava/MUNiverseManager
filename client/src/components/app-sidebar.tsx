@@ -11,6 +11,7 @@ import {
   Megaphone,
   DollarSign,
   Bell,
+  Settings,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
@@ -85,6 +86,11 @@ const menuItems = [
     title: "Updates",
     url: "/updates",
     icon: Bell,
+  },
+  {
+    title: "Marking Criteria",
+    url: "/marking-criteria",
+    icon: Settings,
   },
 ];
 

@@ -121,15 +121,20 @@ export const updates = pgTable("updates", {
   timestamp: timestamp("timestamp").notNull().default(sql`now()`),
 });
 
+export const markingCriteria = pgTable("marking_criteria", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  maxPoints: integer("max_points").notNull(),
+  description: text("description"),
+  orderIndex: integer("order_index").notNull(),
+});
+
 export const delegateEvaluations = pgTable("delegate_evaluations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   delegateId: text("delegate_id").notNull(),
   delegateName: text("delegate_name").notNull(),
   committee: text("committee").notNull(),
-  researchScore: integer("research_score").notNull(),
-  communicationScore: integer("communication_score").notNull(),
-  diplomacyScore: integer("diplomacy_score").notNull(),
-  participationScore: integer("participation_score").notNull(),
+  scores: text("scores").notNull(),
   totalScore: integer("total_score").notNull(),
   comments: text("comments"),
   evaluatedBy: text("evaluated_by").notNull(),
@@ -148,6 +153,7 @@ export const insertSponsorshipSchema = createInsertSchema(sponsorships).omit({ i
 export const insertUpdateSchema = createInsertSchema(updates).omit({ id: true, timestamp: true });
 export const insertDelegateEvaluationSchema = createInsertSchema(delegateEvaluations).omit({ id: true, timestamp: true });
 export const insertAppSettingsSchema = createInsertSchema(appSettings).omit({ id: true });
+export const insertMarkingCriteriaSchema = createInsertSchema(markingCriteria).omit({ id: true });
 
 export type Portfolio = typeof portfolios.$inferSelect;
 export type InsertPortfolio = z.infer<typeof insertPortfolioSchema>;
@@ -173,3 +179,5 @@ export type DelegateEvaluation = typeof delegateEvaluations.$inferSelect;
 export type InsertDelegateEvaluation = z.infer<typeof insertDelegateEvaluationSchema>;
 export type AppSettings = typeof appSettings.$inferSelect;
 export type InsertAppSettings = z.infer<typeof insertAppSettingsSchema>;
+export type MarkingCriteria = typeof markingCriteria.$inferSelect;
+export type InsertMarkingCriteria = z.infer<typeof insertMarkingCriteriaSchema>;
