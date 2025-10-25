@@ -3,12 +3,21 @@ import { pgTable, text, varchar, integer, timestamp } from "drizzle-orm/pg-core"
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+export const portfolios = pgTable("portfolios", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  type: text("type").notNull(),
+  isAvailable: integer("is_available").notNull().default(1),
+});
+
 export const delegates = pgTable("delegates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   school: text("school").notNull(),
+  committeeId: text("committee_id"),
   committee: text("committee").notNull(),
-  country: text("country").notNull(),
+  portfolioId: text("portfolio_id"),
+  portfolio: text("portfolio").notNull(),
   email: text("email").notNull(),
   phone: text("phone"),
   status: text("status").notNull().default("registered"),
@@ -36,6 +45,7 @@ export const committees = pgTable("committees", {
   rapporteur: text("rapporteur"),
   sessionCount: integer("session_count").default(0),
   status: text("status").notNull().default("planning"),
+  portfolios: text("portfolios"),
 });
 
 export const executiveBoard = pgTable("executive_board", {
@@ -70,6 +80,12 @@ export const logistics = pgTable("logistics", {
   notes: text("notes"),
 });
 
+export const appSettings = pgTable("app_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  currency: text("currency").notNull().default("USD"),
+  currencySymbol: text("currency_symbol").notNull().default("$"),
+});
+
 export const marketing = pgTable("marketing", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   campaign: text("campaign").notNull(),
@@ -78,7 +94,9 @@ export const marketing = pgTable("marketing", {
   status: text("status").notNull().default("planning"),
   startDate: timestamp("start_date"),
   endDate: timestamp("end_date"),
-  budget: integer("budget"),
+  bestTimeToPost: text("best_time_to_post"),
+  contentType: text("content_type"),
+  engagement: integer("engagement").default(0),
   notes: text("notes"),
 });
 
@@ -118,6 +136,7 @@ export const delegateEvaluations = pgTable("delegate_evaluations", {
   timestamp: timestamp("timestamp").notNull().default(sql`now()`),
 });
 
+export const insertPortfolioSchema = createInsertSchema(portfolios).omit({ id: true });
 export const insertDelegateSchema = createInsertSchema(delegates).omit({ id: true });
 export const insertSecretariatSchema = createInsertSchema(secretariat).omit({ id: true });
 export const insertCommitteeSchema = createInsertSchema(committees).omit({ id: true });
@@ -128,7 +147,10 @@ export const insertMarketingSchema = createInsertSchema(marketing).omit({ id: tr
 export const insertSponsorshipSchema = createInsertSchema(sponsorships).omit({ id: true });
 export const insertUpdateSchema = createInsertSchema(updates).omit({ id: true, timestamp: true });
 export const insertDelegateEvaluationSchema = createInsertSchema(delegateEvaluations).omit({ id: true, timestamp: true });
+export const insertAppSettingsSchema = createInsertSchema(appSettings).omit({ id: true });
 
+export type Portfolio = typeof portfolios.$inferSelect;
+export type InsertPortfolio = z.infer<typeof insertPortfolioSchema>;
 export type Delegate = typeof delegates.$inferSelect;
 export type InsertDelegate = z.infer<typeof insertDelegateSchema>;
 export type Secretariat = typeof secretariat.$inferSelect;
@@ -149,3 +171,5 @@ export type Update = typeof updates.$inferSelect;
 export type InsertUpdate = z.infer<typeof insertUpdateSchema>;
 export type DelegateEvaluation = typeof delegateEvaluations.$inferSelect;
 export type InsertDelegateEvaluation = z.infer<typeof insertDelegateEvaluationSchema>;
+export type AppSettings = typeof appSettings.$inferSelect;
+export type InsertAppSettings = z.infer<typeof insertAppSettingsSchema>;

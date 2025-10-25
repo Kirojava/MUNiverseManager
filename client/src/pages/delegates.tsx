@@ -4,8 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Award, Phone, Mail, School } from "lucide-react";
-import type { Delegate, InsertDelegate, DelegateEvaluation } from "@shared/schema";
+import { Plus, Search, Award, Phone, Mail, School, Upload } from "lucide-react";
+import type { Delegate, InsertDelegate, DelegateEvaluation, Committee, Portfolio } from "@shared/schema";
 import {
   Dialog,
   DialogContent,
@@ -33,11 +33,14 @@ export default function Delegates() {
   const [searchTerm, setSearchTerm] = useState("");
   const [open, setOpen] = useState(false);
   const [evaluationOpen, setEvaluationOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [selectedDelegate, setSelectedDelegate] = useState<Delegate | null>(null);
   const { toast } = useToast();
 
   const { data: delegates, isLoading } = useQuery<Delegate[]>({ queryKey: ["/api/delegates"] });
   const { data: evaluations } = useQuery<DelegateEvaluation[]>({ queryKey: ["/api/evaluations"] });
+  const { data: committees } = useQuery<Committee[]>({ queryKey: ["/api/committees"] });
+  const { data: portfolios } = useQuery<Portfolio[]>({ queryKey: ["/api/portfolios"] });
 
   const createMutation = useMutation({
     mutationFn: (data: InsertDelegate) => apiRequest("POST", "/api/delegates", data),
@@ -51,8 +54,10 @@ export default function Delegates() {
   const [formData, setFormData] = useState<InsertDelegate>({
     name: "",
     school: "",
+    committeeId: "",
     committee: "",
-    country: "",
+    portfolioId: "",
+    portfolio: "",
     email: "",
     phone: "",
     status: "registered",
@@ -94,6 +99,57 @@ export default function Delegates() {
     });
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const text = event.target?.result as string;
+      const lines = text.split('\n').filter(line => line.trim());
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+
+      let imported = 0;
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.trim());
+        const row: Record<string, string> = {};
+        headers.forEach((header, index) => {
+          row[header] = values[index] || "";
+        });
+
+        if (row.name && row.email) {
+          try {
+            await apiRequest("POST", "/api/delegates", {
+              name: row.name,
+              school: row.school || "",
+              committeeId: row.committeeid || "",
+              committee: row.committee || "",
+              portfolioId: row.portfolioid || "",
+              portfolio: row.portfolio || "",
+              email: row.email,
+              phone: row.phone || "",
+              status: row.status || "registered",
+              performanceScore: 0,
+              notes: row.notes || "",
+            });
+            imported++;
+          } catch (error) {
+            console.error('Failed to import row:', row, error);
+          }
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["/api/delegates"] });
+      setImportOpen(false);
+      toast({ 
+        title: `Imported ${imported} delegate(s)`,
+        description: "Successfully imported data from spreadsheet"
+      });
+    };
+
+    reader.readAsText(file);
+  };
+
   const filteredDelegates = delegates?.filter((d) =>
     d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     d.school.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -116,14 +172,51 @@ export default function Delegates() {
           <h1 className="text-4xl font-bold mb-2">Delegates</h1>
           <p className="text-muted-foreground">Manage delegate registrations and performance</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button data-testid="button-add-delegate">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Delegate
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+        <div className="flex gap-2">
+          <Dialog open={importOpen} onOpenChange={setImportOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" data-testid="button-import-delegates">
+                <Upload className="h-4 w-4 mr-2" />
+                Import CSV
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Import Delegates from CSV</DialogTitle>
+                <DialogDescription>
+                  Upload a CSV file with columns: name, email, school, committee, portfolio, phone, status, notes
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="csv-file">CSV File</Label>
+                  <Input
+                    id="csv-file"
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileUpload}
+                    data-testid="input-csv-file"
+                  />
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  <p className="font-medium mb-2">CSV Format Example:</p>
+                  <code className="block bg-muted p-2 rounded text-xs">
+                    name,email,school,committee,portfolio,phone,status,notes
+                    <br />
+                    John Doe,john@example.com,XYZ School,UNSC,United States,+1234567890,registered,First time delegate
+                  </code>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button data-testid="button-add-delegate">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Delegate
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Add New Delegate</DialogTitle>
               <DialogDescription>Enter delegate information</DialogDescription>
@@ -152,23 +245,55 @@ export default function Delegates() {
                 </div>
                 <div>
                   <Label htmlFor="committee">Committee</Label>
-                  <Input
-                    id="committee"
-                    value={formData.committee}
-                    onChange={(e) => setFormData({ ...formData, committee: e.target.value })}
-                    required
-                    data-testid="input-delegate-committee"
-                  />
+                  <Select 
+                    value={formData.committeeId} 
+                    onValueChange={(value) => {
+                      const selectedCommittee = committees?.find(c => c.id === value);
+                      setFormData({ 
+                        ...formData, 
+                        committeeId: value,
+                        committee: selectedCommittee?.name || ""
+                      });
+                    }}
+                  >
+                    <SelectTrigger data-testid="select-delegate-committee">
+                      <SelectValue placeholder="Select committee" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {committees?.map((committee) => (
+                        <SelectItem key={committee.id} value={committee.id}>
+                          {committee.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
-                  <Label htmlFor="country">Country</Label>
-                  <Input
-                    id="country"
-                    value={formData.country}
-                    onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                    required
-                    data-testid="input-delegate-country"
-                  />
+                  <Label htmlFor="portfolio">Portfolio</Label>
+                  <Select 
+                    value={formData.portfolioId} 
+                    onValueChange={(value) => {
+                      const selectedPortfolio = portfolios?.find(p => p.id === value);
+                      setFormData({ 
+                        ...formData, 
+                        portfolioId: value,
+                        portfolio: selectedPortfolio?.name || ""
+                      });
+                    }}
+                  >
+                    <SelectTrigger data-testid="select-delegate-portfolio">
+                      <SelectValue placeholder="Select portfolio" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {portfolios
+                        ?.filter(p => p.isAvailable === 1)
+                        .map((portfolio) => (
+                        <SelectItem key={portfolio.id} value={portfolio.id}>
+                          {portfolio.name} ({portfolio.type})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label htmlFor="email">Email</Label>
@@ -222,6 +347,7 @@ export default function Delegates() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Tabs defaultValue="all" className="w-full">
@@ -277,7 +403,7 @@ export default function Delegates() {
                           {delegate.committee}
                         </Badge>
                         <span className="text-muted-foreground">•</span>
-                        <span className="text-muted-foreground">{delegate.country}</span>
+                        <span className="text-muted-foreground">{delegate.portfolio}</span>
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Mail className="h-3 w-3" />

@@ -3,6 +3,8 @@ import {
   Users,
   UserCog,
   Boxes,
+  Globe,
+  Grid3x3,
   Crown,
   ListTodo,
   Package,
@@ -43,6 +45,16 @@ const menuItems = [
     title: "Committees",
     url: "/committees",
     icon: Boxes,
+  },
+  {
+    title: "Portfolios",
+    url: "/portfolios",
+    icon: Globe,
+  },
+  {
+    title: "Allocation Matrix",
+    url: "/allocation-matrix",
+    icon: Grid3x3,
   },
   {
     title: "Executive Board",

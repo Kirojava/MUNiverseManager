@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, TrendingUp, Calendar, DollarSign } from "lucide-react";
+import { Plus, TrendingUp, Calendar, Clock, Video, Heart } from "lucide-react";
 import type { Marketing, InsertMarketing } from "@shared/schema";
 import {
   Dialog,
@@ -50,7 +50,9 @@ export default function Marketing() {
     status: "planning",
     startDate: null,
     endDate: null,
-    budget: 0,
+    bestTimeToPost: "",
+    contentType: "",
+    engagement: 0,
     notes: "",
   });
 
@@ -71,7 +73,7 @@ export default function Marketing() {
   };
 
   const totalReach = marketing?.reduce((sum, m) => sum + (m.reach || 0), 0) || 0;
-  const totalBudget = marketing?.reduce((sum, m) => sum + (m.budget || 0), 0) || 0;
+  const totalEngagement = marketing?.reduce((sum, m) => sum + (m.engagement || 0), 0) || 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -143,15 +145,45 @@ export default function Marketing() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="budget">Budget ($)</Label>
+                  <Label htmlFor="engagement">Engagement</Label>
                   <Input
-                    id="budget"
+                    id="engagement"
                     type="number"
-                    value={formData.budget || 0}
-                    onChange={(e) => setFormData({ ...formData, budget: parseInt(e.target.value) || 0 })}
+                    value={formData.engagement || 0}
+                    onChange={(e) => setFormData({ ...formData, engagement: parseInt(e.target.value) || 0 })}
                     min="0"
-                    data-testid="input-marketing-budget"
+                    placeholder="Likes, comments, shares"
+                    data-testid="input-marketing-engagement"
                   />
+                </div>
+                <div>
+                  <Label htmlFor="contentType">Content Type</Label>
+                  <Select value={formData.contentType || ""} onValueChange={(value) => setFormData({ ...formData, contentType: value })}>
+                    <SelectTrigger data-testid="select-marketing-content-type">
+                      <SelectValue placeholder="Select content type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Reel">Reel</SelectItem>
+                      <SelectItem value="Post">Post</SelectItem>
+                      <SelectItem value="Story">Story</SelectItem>
+                      <SelectItem value="Video">Video</SelectItem>
+                      <SelectItem value="Article">Article</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="bestTimeToPost">Best Time to Post</Label>
+                  <Select value={formData.bestTimeToPost || ""} onValueChange={(value) => setFormData({ ...formData, bestTimeToPost: value })}>
+                    <SelectTrigger data-testid="select-marketing-best-time">
+                      <SelectValue placeholder="Select best time" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Morning (6-9 AM)">Morning (6-9 AM)</SelectItem>
+                      <SelectItem value="Midday (12-2 PM)">Midday (12-2 PM)</SelectItem>
+                      <SelectItem value="Evening (5-7 PM)">Evening (5-7 PM)</SelectItem>
+                      <SelectItem value="Night (8-10 PM)">Night (8-10 PM)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label htmlFor="startDate">Start Date</Label>
@@ -214,10 +246,10 @@ export default function Marketing() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Budget</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Engagement</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">${totalBudget.toLocaleString()}</div>
+            <div className="text-3xl font-bold">{totalEngagement.toLocaleString()}</div>
           </CardContent>
         </Card>
       </div>
@@ -254,16 +286,32 @@ export default function Marketing() {
                     </div>
                     <p className="text-lg font-semibold">{campaign.reach?.toLocaleString() || 0}</p>
                   </div>
-                  {campaign.budget && campaign.budget > 0 && (
+                  {campaign.engagement && campaign.engagement > 0 && (
                     <div>
                       <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                        <DollarSign className="h-3 w-3" />
-                        <span>Budget</span>
+                        <Heart className="h-3 w-3" />
+                        <span>Engagement</span>
                       </div>
-                      <p className="text-lg font-semibold">${campaign.budget.toLocaleString()}</p>
+                      <p className="text-lg font-semibold">{campaign.engagement.toLocaleString()}</p>
                     </div>
                   )}
                 </div>
+                {(campaign.contentType || campaign.bestTimeToPost) && (
+                  <div className="flex flex-wrap items-center gap-2 text-sm pt-3 border-t">
+                    {campaign.contentType && (
+                      <div className="flex items-center gap-1">
+                        <Video className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-muted-foreground">{campaign.contentType}</span>
+                      </div>
+                    )}
+                    {campaign.bestTimeToPost && (
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-muted-foreground">{campaign.bestTimeToPost}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
                 {(campaign.startDate || campaign.endDate) && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground pt-3 border-t">
                     <Calendar className="h-3 w-3" />

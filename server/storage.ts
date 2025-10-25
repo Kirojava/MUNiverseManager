@@ -19,10 +19,20 @@ import {
   type InsertUpdate,
   type DelegateEvaluation,
   type InsertDelegateEvaluation,
+  type Portfolio,
+  type InsertPortfolio,
+  type AppSettings,
+  type InsertAppSettings,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
+  getPortfolios(): Promise<Portfolio[]>;
+  getPortfolio(id: string): Promise<Portfolio | undefined>;
+  createPortfolio(portfolio: InsertPortfolio): Promise<Portfolio>;
+  updatePortfolio(id: string, portfolio: Partial<InsertPortfolio>): Promise<Portfolio | undefined>;
+  deletePortfolio(id: string): Promise<boolean>;
+
   getDelegates(): Promise<Delegate[]>;
   getDelegate(id: string): Promise<Delegate | undefined>;
   createDelegate(delegate: InsertDelegate): Promise<Delegate>;
@@ -73,9 +83,13 @@ export interface IStorage {
   createEvaluation(evaluation: InsertDelegateEvaluation): Promise<DelegateEvaluation>;
   updateEvaluation(id: string, evaluation: Partial<InsertDelegateEvaluation>): Promise<DelegateEvaluation | undefined>;
   deleteEvaluation(id: string): Promise<boolean>;
+
+  getAppSettings(): Promise<AppSettings | undefined>;
+  updateAppSettings(settings: Partial<InsertAppSettings>): Promise<AppSettings>;
 }
 
 export class MemStorage implements IStorage {
+  private portfolios: Map<string, Portfolio>;
   private delegates: Map<string, Delegate>;
   private secretariat: Map<string, Secretariat>;
   private committees: Map<string, Committee>;
@@ -86,8 +100,10 @@ export class MemStorage implements IStorage {
   private sponsorships: Map<string, Sponsorship>;
   private updates: Map<string, Update>;
   private evaluations: Map<string, DelegateEvaluation>;
+  private appSettings: AppSettings | undefined;
 
   constructor() {
+    this.portfolios = new Map();
     this.delegates = new Map();
     this.secretariat = new Map();
     this.committees = new Map();
@@ -98,17 +114,53 @@ export class MemStorage implements IStorage {
     this.sponsorships = new Map();
     this.updates = new Map();
     this.evaluations = new Map();
+    this.appSettings = undefined;
 
     this.seedData();
   }
 
   private seedData() {
+    const defaultPortfolios: Portfolio[] = [
+      { id: randomUUID(), name: "United States", type: "Country", isAvailable: 1 },
+      { id: randomUUID(), name: "China", type: "Country", isAvailable: 1 },
+      { id: randomUUID(), name: "Russia", type: "Country", isAvailable: 1 },
+      { id: randomUUID(), name: "United Kingdom", type: "Country", isAvailable: 1 },
+      { id: randomUUID(), name: "France", type: "Country", isAvailable: 1 },
+      { id: randomUUID(), name: "Germany", type: "Country", isAvailable: 1 },
+      { id: randomUUID(), name: "India", type: "Country", isAvailable: 1 },
+      { id: randomUUID(), name: "Japan", type: "Country", isAvailable: 1 },
+      { id: randomUUID(), name: "Brazil", type: "Country", isAvailable: 1 },
+      { id: randomUUID(), name: "Canada", type: "Country", isAvailable: 1 },
+      { id: randomUUID(), name: "Australia", type: "Country", isAvailable: 1 },
+      { id: randomUUID(), name: "South Africa", type: "Country", isAvailable: 1 },
+      { id: randomUUID(), name: "Saudi Arabia", type: "Country", isAvailable: 1 },
+      { id: randomUUID(), name: "Mexico", type: "Country", isAvailable: 1 },
+      { id: randomUUID(), name: "South Korea", type: "Country", isAvailable: 1 },
+      { id: randomUUID(), name: "WHO", type: "NGO", isAvailable: 1 },
+      { id: randomUUID(), name: "UNESCO", type: "NGO", isAvailable: 1 },
+      { id: randomUUID(), name: "UNICEF", type: "NGO", isAvailable: 1 },
+      { id: randomUUID(), name: "Red Cross", type: "NGO", isAvailable: 1 },
+      { id: randomUUID(), name: "Amnesty International", type: "NGO", isAvailable: 1 },
+      { id: randomUUID(), name: "Greenpeace", type: "NGO", isAvailable: 1 },
+    ];
+    
+    defaultPortfolios.forEach(p => this.portfolios.set(p.id, p));
+
+    this.appSettings = {
+      id: randomUUID(),
+      currency: "USD",
+      currencySymbol: "$",
+    };
+
+    const samplePortfolio = defaultPortfolios[0];
     const sampleDelegate: Delegate = {
       id: randomUUID(),
       name: "Alex Thompson",
       school: "International High School",
+      committeeId: "",
       committee: "UNSC",
-      country: "United States",
+      portfolioId: samplePortfolio.id,
+      portfolio: samplePortfolio.name,
       email: "alex.thompson@example.com",
       phone: "+1 555-0123",
       status: "confirmed",
@@ -127,6 +179,7 @@ export class MemStorage implements IStorage {
       rapporteur: "Emma Williams",
       sessionCount: 3,
       status: "active",
+      portfolios: null,
     };
     this.committees.set(sampleCommittee.id, sampleCommittee);
 
@@ -400,6 +453,55 @@ export class MemStorage implements IStorage {
 
   async deleteEvaluation(id: string): Promise<boolean> {
     return this.evaluations.delete(id);
+  }
+
+  async getPortfolios(): Promise<Portfolio[]> {
+    return Array.from(this.portfolios.values()).sort((a, b) => {
+      if (a.type !== b.type) {
+        return a.type === "Country" ? -1 : 1;
+      }
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  async getPortfolio(id: string): Promise<Portfolio | undefined> {
+    return this.portfolios.get(id);
+  }
+
+  async createPortfolio(insertPortfolio: InsertPortfolio): Promise<Portfolio> {
+    const id = randomUUID();
+    const portfolio: Portfolio = { ...insertPortfolio, id };
+    this.portfolios.set(id, portfolio);
+    return portfolio;
+  }
+
+  async updatePortfolio(id: string, data: Partial<InsertPortfolio>): Promise<Portfolio | undefined> {
+    const existing = this.portfolios.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...data };
+    this.portfolios.set(id, updated);
+    return updated;
+  }
+
+  async deletePortfolio(id: string): Promise<boolean> {
+    return this.portfolios.delete(id);
+  }
+
+  async getAppSettings(): Promise<AppSettings | undefined> {
+    return this.appSettings;
+  }
+
+  async updateAppSettings(settings: Partial<InsertAppSettings>): Promise<AppSettings> {
+    if (!this.appSettings) {
+      this.appSettings = {
+        id: randomUUID(),
+        currency: settings.currency || "USD",
+        currencySymbol: settings.currencySymbol || "$",
+      };
+    } else {
+      this.appSettings = { ...this.appSettings, ...settings };
+    }
+    return this.appSettings;
   }
 }
 

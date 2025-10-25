@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import {
+  insertPortfolioSchema,
   insertDelegateSchema,
   insertSecretariatSchema,
   insertCommitteeSchema,
@@ -12,9 +13,61 @@ import {
   insertSponsorshipSchema,
   insertUpdateSchema,
   insertDelegateEvaluationSchema,
+  insertAppSettingsSchema,
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  app.get("/api/portfolios", async (_req, res) => {
+    const portfolios = await storage.getPortfolios();
+    res.json(portfolios);
+  });
+
+  app.post("/api/portfolios", async (req, res) => {
+    try {
+      const data = insertPortfolioSchema.parse(req.body);
+      const portfolio = await storage.createPortfolio(data);
+      res.status(201).json(portfolio);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid portfolio data" });
+    }
+  });
+
+  app.patch("/api/portfolios/:id", async (req, res) => {
+    try {
+      const data = insertPortfolioSchema.partial().parse(req.body);
+      const portfolio = await storage.updatePortfolio(req.params.id, data);
+      if (!portfolio) {
+        return res.status(404).json({ error: "Portfolio not found" });
+      }
+      res.json(portfolio);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid update data" });
+    }
+  });
+
+  app.delete("/api/portfolios/:id", async (req, res) => {
+    const success = await storage.deletePortfolio(req.params.id);
+    if (!success) {
+      return res.status(404).json({ error: "Portfolio not found" });
+    }
+    res.status(204).send();
+  });
+
+  app.get("/api/app-settings", async (_req, res) => {
+    const settings = await storage.getAppSettings();
+    res.json(settings);
+  });
+
+  app.patch("/api/app-settings", async (req, res) => {
+    try {
+      const data = insertAppSettingsSchema.partial().parse(req.body);
+      const settings = await storage.updateAppSettings(data);
+      res.json(settings);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid settings data" });
+    }
+  });
+
   app.get("/api/delegates", async (_req, res) => {
     const delegates = await storage.getDelegates();
     res.json(delegates);

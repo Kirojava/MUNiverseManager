@@ -6,10 +6,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { CurrencySelector } from "@/components/currency-selector";
 import Dashboard from "@/pages/dashboard";
 import Delegates from "@/pages/delegates";
 import Secretariat from "@/pages/secretariat";
 import Committees from "@/pages/committees";
+import Portfolios from "@/pages/portfolios";
+import AllocationMatrix from "@/pages/allocation-matrix";
 import ExecutiveBoard from "@/pages/executive-board";
 import Tasks from "@/pages/tasks";
 import Logistics from "@/pages/logistics";
@@ -25,6 +28,8 @@ function Router() {
       <Route path="/delegates" component={Delegates} />
       <Route path="/secretariat" component={Secretariat} />
       <Route path="/committees" component={Committees} />
+      <Route path="/portfolios" component={Portfolios} />
+      <Route path="/allocation-matrix" component={AllocationMatrix} />
       <Route path="/executive-board" component={ExecutiveBoard} />
       <Route path="/tasks" component={Tasks} />
       <Route path="/logistics" component={Logistics} />
@@ -51,7 +56,10 @@ export default function App() {
             <div className="flex flex-col flex-1 min-w-0">
               <header className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-background z-50">
                 <SidebarTrigger data-testid="button-sidebar-toggle" />
-                <ThemeToggle />
+                <div className="flex items-center gap-2">
+                  <CurrencySelector />
+                  <ThemeToggle />
+                </div>
               </header>
               <main className="flex-1 overflow-auto">
                 <div className="container mx-auto px-6 py-8 max-w-7xl">
