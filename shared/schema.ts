@@ -141,6 +141,27 @@ export const delegateEvaluations = pgTable("delegate_evaluations", {
   timestamp: timestamp("timestamp").notNull().default(sql`now()`),
 });
 
+export const awardTypes = pgTable("award_types", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  orderIndex: integer("order_index").notNull(),
+  isActive: integer("is_active").notNull().default(1),
+});
+
+export const delegateAwards = pgTable("delegate_awards", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  committeeId: text("committee_id").notNull(),
+  committeeName: text("committee_name").notNull(),
+  awardTypeId: text("award_type_id").notNull(),
+  awardTypeName: text("award_type_name").notNull(),
+  delegateId: text("delegate_id"),
+  delegateName: text("delegate_name"),
+  isAutoAssigned: integer("is_auto_assigned").notNull().default(1),
+  assignedBy: text("assigned_by"),
+  timestamp: timestamp("timestamp").notNull().default(sql`now()`),
+});
+
 export const insertPortfolioSchema = createInsertSchema(portfolios).omit({ id: true });
 export const insertDelegateSchema = createInsertSchema(delegates).omit({ id: true });
 export const insertSecretariatSchema = createInsertSchema(secretariat).omit({ id: true });
@@ -154,6 +175,8 @@ export const insertUpdateSchema = createInsertSchema(updates).omit({ id: true, t
 export const insertDelegateEvaluationSchema = createInsertSchema(delegateEvaluations).omit({ id: true, timestamp: true });
 export const insertAppSettingsSchema = createInsertSchema(appSettings).omit({ id: true });
 export const insertMarkingCriteriaSchema = createInsertSchema(markingCriteria).omit({ id: true });
+export const insertAwardTypeSchema = createInsertSchema(awardTypes).omit({ id: true });
+export const insertDelegateAwardSchema = createInsertSchema(delegateAwards).omit({ id: true, timestamp: true });
 
 export type Portfolio = typeof portfolios.$inferSelect;
 export type InsertPortfolio = z.infer<typeof insertPortfolioSchema>;
@@ -181,3 +204,7 @@ export type AppSettings = typeof appSettings.$inferSelect;
 export type InsertAppSettings = z.infer<typeof insertAppSettingsSchema>;
 export type MarkingCriteria = typeof markingCriteria.$inferSelect;
 export type InsertMarkingCriteria = z.infer<typeof insertMarkingCriteriaSchema>;
+export type AwardType = typeof awardTypes.$inferSelect;
+export type InsertAwardType = z.infer<typeof insertAwardTypeSchema>;
+export type DelegateAward = typeof delegateAwards.$inferSelect;
+export type InsertDelegateAward = z.infer<typeof insertDelegateAwardSchema>;

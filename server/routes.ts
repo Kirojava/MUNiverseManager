@@ -15,6 +15,8 @@ import {
   insertDelegateEvaluationSchema,
   insertAppSettingsSchema,
   insertMarkingCriteriaSchema,
+  insertAwardTypeSchema,
+  insertDelegateAwardSchema,
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -469,6 +471,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const success = await storage.deleteMarkingCriteria(req.params.id);
     if (!success) {
       return res.status(404).json({ error: "Criteria not found" });
+    }
+    res.status(204).send();
+  });
+
+  app.get("/api/award-types", async (_req, res) => {
+    const awardTypes = await storage.getAwardTypes();
+    res.json(awardTypes);
+  });
+
+  app.post("/api/award-types", async (req, res) => {
+    try {
+      const data = insertAwardTypeSchema.parse(req.body);
+      const awardType = await storage.createAwardType(data);
+      res.status(201).json(awardType);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid award type data" });
+    }
+  });
+
+  app.patch("/api/award-types/:id", async (req, res) => {
+    try {
+      const data = insertAwardTypeSchema.partial().parse(req.body);
+      const awardType = await storage.updateAwardType(req.params.id, data);
+      if (!awardType) {
+        return res.status(404).json({ error: "Award type not found" });
+      }
+      res.json(awardType);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid update data" });
+    }
+  });
+
+  app.delete("/api/award-types/:id", async (req, res) => {
+    const success = await storage.deleteAwardType(req.params.id);
+    if (!success) {
+      return res.status(404).json({ error: "Award type not found" });
+    }
+    res.status(204).send();
+  });
+
+  app.get("/api/delegate-awards", async (_req, res) => {
+    const awards = await storage.getDelegateAwards();
+    res.json(awards);
+  });
+
+  app.get("/api/delegate-awards/committee/:committeeId", async (req, res) => {
+    const awards = await storage.getDelegateAwardsByCommittee(req.params.committeeId);
+    res.json(awards);
+  });
+
+  app.post("/api/delegate-awards", async (req, res) => {
+    try {
+      const data = insertDelegateAwardSchema.parse(req.body);
+      const award = await storage.createDelegateAward(data);
+      res.status(201).json(award);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid award data" });
+    }
+  });
+
+  app.post("/api/delegate-awards/auto-assign", async (req, res) => {
+    try {
+      const { committeeId, committeeName, assignedBy, force } = req.body;
+      if (!committeeId || !committeeName || !assignedBy) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      
+      const existingAwards = await storage.getDelegateAwardsByCommittee(committeeId);
+      if (existingAwards.length > 0 && !force) {
+        return res.status(409).json({ 
+          error: "Awards already exist for this committee. Use force=true to override." 
+        });
+      }
+
+      const awards = await storage.autoAssignAwards(committeeId, committeeName, assignedBy);
+      res.status(201).json(awards);
+    } catch (error) {
+      res.status(400).json({ error: "Failed to auto-assign awards" });
+    }
+  });
+
+  app.patch("/api/delegate-awards/:id", async (req, res) => {
+    try {
+      const data = insertDelegateAwardSchema.partial().parse(req.body);
+      const award = await storage.updateDelegateAward(req.params.id, data);
+      if (!award) {
+        return res.status(404).json({ error: "Award not found" });
+      }
+      res.json(award);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid update data" });
+    }
+  });
+
+  app.delete("/api/delegate-awards/:id", async (req, res) => {
+    const success = await storage.deleteDelegateAward(req.params.id);
+    if (!success) {
+      return res.status(404).json({ error: "Award not found" });
     }
     res.status(204).send();
   });

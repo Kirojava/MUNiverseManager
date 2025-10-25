@@ -12,6 +12,7 @@ import {
   DollarSign,
   Bell,
   Settings,
+  Trophy,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
@@ -91,6 +92,11 @@ const menuItems = [
     title: "Marking Criteria",
     url: "/marking-criteria",
     icon: Settings,
+  },
+  {
+    title: "Awards",
+    url: "/awards",
+    icon: Trophy,
   },
 ];
 

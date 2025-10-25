@@ -25,8 +25,22 @@ import {
   type InsertAppSettings,
   type MarkingCriteria,
   type InsertMarkingCriteria,
+  type AwardType,
+  type InsertAwardType,
+  type DelegateAward,
+  type InsertDelegateAward,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
+
+function normalizeNullable<T>(data: T): T {
+  const result = { ...data } as any;
+  for (const key in result) {
+    if (result[key] === undefined) {
+      result[key] = null;
+    }
+  }
+  return result as T;
+}
 
 export interface IStorage {
   getPortfolios(): Promise<Portfolio[]>;
@@ -93,6 +107,18 @@ export interface IStorage {
   createMarkingCriteria(criteria: InsertMarkingCriteria): Promise<MarkingCriteria>;
   updateMarkingCriteria(id: string, criteria: Partial<InsertMarkingCriteria>): Promise<MarkingCriteria | undefined>;
   deleteMarkingCriteria(id: string): Promise<boolean>;
+
+  getAwardTypes(): Promise<AwardType[]>;
+  createAwardType(awardType: InsertAwardType): Promise<AwardType>;
+  updateAwardType(id: string, awardType: Partial<InsertAwardType>): Promise<AwardType | undefined>;
+  deleteAwardType(id: string): Promise<boolean>;
+
+  getDelegateAwards(): Promise<DelegateAward[]>;
+  getDelegateAwardsByCommittee(committeeId: string): Promise<DelegateAward[]>;
+  createDelegateAward(award: InsertDelegateAward): Promise<DelegateAward>;
+  updateDelegateAward(id: string, award: Partial<InsertDelegateAward>): Promise<DelegateAward | undefined>;
+  deleteDelegateAward(id: string): Promise<boolean>;
+  autoAssignAwards(committeeId: string, committeeName: string, assignedBy: string): Promise<DelegateAward[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -109,6 +135,8 @@ export class MemStorage implements IStorage {
   private evaluations: Map<string, DelegateEvaluation>;
   private appSettings: AppSettings | undefined;
   private markingCriteria: Map<string, MarkingCriteria>;
+  private awardTypes: Map<string, AwardType>;
+  private delegateAwards: Map<string, DelegateAward>;
 
   constructor() {
     this.portfolios = new Map();
@@ -124,6 +152,8 @@ export class MemStorage implements IStorage {
     this.evaluations = new Map();
     this.appSettings = undefined;
     this.markingCriteria = new Map();
+    this.awardTypes = new Map();
+    this.delegateAwards = new Map();
 
     this.seedData();
   }
@@ -221,6 +251,15 @@ export class MemStorage implements IStorage {
       { id: randomUUID(), name: "Participation & Engagement", maxPoints: 100, description: "Active participation in debates and discussions", orderIndex: 3 },
     ];
     defaultMarkingCriteria.forEach(c => this.markingCriteria.set(c.id, c));
+
+    const defaultAwardTypes: AwardType[] = [
+      { id: randomUUID(), name: "Best Delegate", description: "Awarded to the top performing delegate", orderIndex: 0, isActive: 1 },
+      { id: randomUUID(), name: "High Commendation", description: "Awarded to exceptional delegates", orderIndex: 1, isActive: 1 },
+      { id: randomUUID(), name: "Special Mention", description: "Recognition for notable performance", orderIndex: 2, isActive: 1 },
+      { id: randomUUID(), name: "Verbal Mention", description: "Honorable verbal recognition", orderIndex: 3, isActive: 1 },
+      { id: randomUUID(), name: "Honorary Mention", description: "Honorary recognition", orderIndex: 4, isActive: 1 },
+    ];
+    defaultAwardTypes.forEach(a => this.awardTypes.set(a.id, a));
   }
 
   async getDelegates(): Promise<Delegate[]> {
@@ -233,7 +272,7 @@ export class MemStorage implements IStorage {
 
   async createDelegate(insertDelegate: InsertDelegate): Promise<Delegate> {
     const id = randomUUID();
-    const delegate: Delegate = { ...insertDelegate, id };
+    const delegate: Delegate = normalizeNullable({ ...insertDelegate, id });
     this.delegates.set(id, delegate);
     return delegate;
   }
@@ -256,7 +295,7 @@ export class MemStorage implements IStorage {
 
   async createSecretariat(insertMember: InsertSecretariat): Promise<Secretariat> {
     const id = randomUUID();
-    const member: Secretariat = { ...insertMember, id };
+    const member: Secretariat = normalizeNullable({ ...insertMember, id });
     this.secretariat.set(id, member);
     return member;
   }
@@ -279,7 +318,7 @@ export class MemStorage implements IStorage {
 
   async createCommittee(insertCommittee: InsertCommittee): Promise<Committee> {
     const id = randomUUID();
-    const committee: Committee = { ...insertCommittee, id };
+    const committee: Committee = normalizeNullable({ ...insertCommittee, id });
     this.committees.set(id, committee);
     return committee;
   }
@@ -302,7 +341,7 @@ export class MemStorage implements IStorage {
 
   async createExecutiveBoard(insertMember: InsertExecutiveBoard): Promise<ExecutiveBoard> {
     const id = randomUUID();
-    const member: ExecutiveBoard = { ...insertMember, id };
+    const member: ExecutiveBoard = normalizeNullable({ ...insertMember, id });
     this.executiveBoard.set(id, member);
     return member;
   }
@@ -331,7 +370,7 @@ export class MemStorage implements IStorage {
 
   async createTask(insertTask: InsertTask): Promise<Task> {
     const id = randomUUID();
-    const task: Task = { ...insertTask, id };
+    const task: Task = normalizeNullable({ ...insertTask, id });
     this.tasks.set(id, task);
     return task;
   }
@@ -354,7 +393,7 @@ export class MemStorage implements IStorage {
 
   async createLogistics(insertItem: InsertLogistics): Promise<Logistics> {
     const id = randomUUID();
-    const item: Logistics = { ...insertItem, id };
+    const item: Logistics = normalizeNullable({ ...insertItem, id });
     this.logistics.set(id, item);
     return item;
   }
@@ -382,7 +421,7 @@ export class MemStorage implements IStorage {
 
   async createMarketing(insertCampaign: InsertMarketing): Promise<Marketing> {
     const id = randomUUID();
-    const campaign: Marketing = { ...insertCampaign, id };
+    const campaign: Marketing = normalizeNullable({ ...insertCampaign, id });
     this.marketing.set(id, campaign);
     return campaign;
   }
@@ -405,7 +444,7 @@ export class MemStorage implements IStorage {
 
   async createSponsorship(insertSponsor: InsertSponsorship): Promise<Sponsorship> {
     const id = randomUUID();
-    const sponsor: Sponsorship = { ...insertSponsor, id };
+    const sponsor: Sponsorship = normalizeNullable({ ...insertSponsor, id });
     this.sponsorships.set(id, sponsor);
     return sponsor;
   }
@@ -455,7 +494,7 @@ export class MemStorage implements IStorage {
 
   async createEvaluation(insertEvaluation: InsertDelegateEvaluation): Promise<DelegateEvaluation> {
     const id = randomUUID();
-    const evaluation: DelegateEvaluation = { ...insertEvaluation, id, timestamp: new Date() };
+    const evaluation: DelegateEvaluation = normalizeNullable({ ...insertEvaluation, id, timestamp: new Date() });
     this.evaluations.set(id, evaluation);
     return evaluation;
   }
@@ -487,7 +526,7 @@ export class MemStorage implements IStorage {
 
   async createPortfolio(insertPortfolio: InsertPortfolio): Promise<Portfolio> {
     const id = randomUUID();
-    const portfolio: Portfolio = { ...insertPortfolio, id };
+    const portfolio: Portfolio = normalizeNullable({ ...insertPortfolio, id });
     this.portfolios.set(id, portfolio);
     return portfolio;
   }
@@ -527,7 +566,7 @@ export class MemStorage implements IStorage {
 
   async createMarkingCriteria(insertCriteria: InsertMarkingCriteria): Promise<MarkingCriteria> {
     const id = randomUUID();
-    const criteria: MarkingCriteria = { ...insertCriteria, id };
+    const criteria: MarkingCriteria = normalizeNullable({ ...insertCriteria, id });
     this.markingCriteria.set(id, criteria);
     return criteria;
   }
@@ -542,6 +581,104 @@ export class MemStorage implements IStorage {
 
   async deleteMarkingCriteria(id: string): Promise<boolean> {
     return this.markingCriteria.delete(id);
+  }
+
+  async getAwardTypes(): Promise<AwardType[]> {
+    return Array.from(this.awardTypes.values()).sort((a, b) => a.orderIndex - b.orderIndex);
+  }
+
+  async createAwardType(insertAwardType: InsertAwardType): Promise<AwardType> {
+    const id = randomUUID();
+    const awardType: AwardType = normalizeNullable({ ...insertAwardType, id });
+    this.awardTypes.set(id, awardType);
+    return awardType;
+  }
+
+  async updateAwardType(id: string, data: Partial<InsertAwardType>): Promise<AwardType | undefined> {
+    const existing = this.awardTypes.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...data };
+    this.awardTypes.set(id, updated);
+    return updated;
+  }
+
+  async deleteAwardType(id: string): Promise<boolean> {
+    return this.awardTypes.delete(id);
+  }
+
+  async getDelegateAwards(): Promise<DelegateAward[]> {
+    return Array.from(this.delegateAwards.values()).sort((a, b) => {
+      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+    });
+  }
+
+  async getDelegateAwardsByCommittee(committeeId: string): Promise<DelegateAward[]> {
+    return Array.from(this.delegateAwards.values())
+      .filter(award => award.committeeId === committeeId)
+      .sort((a, b) => {
+        const awardTypes = Array.from(this.awardTypes.values());
+        const aTypeOrder = awardTypes.find(at => at.id === a.awardTypeId)?.orderIndex ?? 999;
+        const bTypeOrder = awardTypes.find(at => at.id === b.awardTypeId)?.orderIndex ?? 999;
+        return aTypeOrder - bTypeOrder;
+      });
+  }
+
+  async createDelegateAward(insertAward: InsertDelegateAward): Promise<DelegateAward> {
+    const id = randomUUID();
+    const award: DelegateAward = normalizeNullable({ ...insertAward, id, timestamp: new Date() });
+    this.delegateAwards.set(id, award);
+    return award;
+  }
+
+  async updateDelegateAward(id: string, data: Partial<InsertDelegateAward>): Promise<DelegateAward | undefined> {
+    const existing = this.delegateAwards.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...data };
+    this.delegateAwards.set(id, updated);
+    return updated;
+  }
+
+  async deleteDelegateAward(id: string): Promise<boolean> {
+    return this.delegateAwards.delete(id);
+  }
+
+  async autoAssignAwards(committeeId: string, committeeName: string, assignedBy: string): Promise<DelegateAward[]> {
+    const evaluations = Array.from(this.evaluations.values())
+      .filter(evaluation => evaluation.committee === committeeName)
+      .sort((a, b) => b.totalScore - a.totalScore);
+
+    const activeAwardTypes = Array.from(this.awardTypes.values())
+      .filter(at => at.isActive === 1)
+      .sort((a, b) => a.orderIndex - b.orderIndex);
+
+    const existingAwards = await this.getDelegateAwardsByCommittee(committeeId);
+    existingAwards.forEach(award => this.delegateAwards.delete(award.id));
+
+    const newAwards: DelegateAward[] = [];
+    const assignedDelegates = new Set<string>();
+
+    activeAwardTypes.forEach((awardType, index) => {
+      if (index < evaluations.length && !assignedDelegates.has(evaluations[index].delegateId)) {
+        const evaluation = evaluations[index];
+        const award: DelegateAward = normalizeNullable({
+          id: randomUUID(),
+          committeeId,
+          committeeName,
+          awardTypeId: awardType.id,
+          awardTypeName: awardType.name,
+          delegateId: evaluation.delegateId,
+          delegateName: evaluation.delegateName,
+          isAutoAssigned: 1,
+          assignedBy,
+          timestamp: new Date(),
+        });
+        this.delegateAwards.set(award.id, award);
+        newAwards.push(award);
+        assignedDelegates.add(evaluation.delegateId);
+      }
+    });
+
+    return newAwards;
   }
 }
 
